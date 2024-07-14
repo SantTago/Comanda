@@ -1,0 +1,157 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    background-color: #f7f7f7;
+    padding: 20px;
+}
+
+h2 {
+    color: #333;
+}
+
+.mesas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 600px;
+}
+
+.mesa {
+    background-color: #fff;
+    border: 2px solid #4CAF50;
+    border-radius: 8px;
+    padding: 20px;
+    width: 150px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.mesa:hover {
+    transform: scale(1.05);
+    background-color: #e8f5e9;
+}
+
+.detalhes-mesa, .produtos {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.detalhes-mesa h3, .produtos h3 {
+    margin-top: 0;
+}
+
+.detalhes-mesa ul, .produtos ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.detalhes-mesa li, .produtos li {
+    padding: 5px 0;
+    cursor: pointer;
+}
+
+.produtos li:hover {
+    background-color: #f1f1f1;
+}
+
+.detalhes-mesa button, .produtos button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin-top: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.detalhes-mesa button:hover, .produtos button:hover {
+    background-color: #45a049;
+}
+
+.lista-produtos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.produto {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.produtos {
+    /* Estilos existentes ... */
+
+    /* Definindo altura máxima e barra de rolagem */
+    max-height: 300px; /* Altura máxima ajustável conforme necessário */
+    overflow-y: auto; /* Adiciona barra de rolagem vertical */
+}
+
+/* Estilos CSS adicionais conforme necessário */
+.recibo {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+    max-width: 400px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.recibo h3 {
+    margin-top: 0;
+}
+
+.recibo ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.recibo button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin-top: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.recibo button:hover {
+    background-color: #45a049;
+}
+
+.recibo input {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
+
+
+.produto:hover {
+    transform: scale(1.05);
+}
+
+.nome-produto {
+    font-weight: bold;
+}
+
+.preco-produto {
+    color: #666;
+}
+
