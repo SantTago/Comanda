@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Mesas</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
     <style>
         /* Estilos CSS aqui */
         body {
@@ -16,19 +18,16 @@
             background-color: #f7f7f7;
             padding: 20px;
         }
-
         h2 {
             color: #333;
             text-align: center;
         }
-
         .mesas {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             max-width: 600px;
         }
-
         .mesa {
             background-color: #fff;
             border: 2px solid #4CAF50;
@@ -39,12 +38,10 @@
             cursor: pointer;
             transition: transform 0.2s;
         }
-
         .mesa:hover {
             transform: scale(1.05);
             background-color: #e8f5e9;
         }
-
         .detalhes-mesa, .produtos {
             background-color: #fff;
             border: 1px solid #ccc;
@@ -54,26 +51,22 @@
             max-width: 400px;
             width: 100%;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
-
         .detalhes-mesa h3, .produtos h3 {
             margin-top: 0;
         }
-
         .detalhes-mesa ul, .produtos ul {
             list-style-type: none;
             padding: 0;
         }
-
         .detalhes-mesa li, .produtos li {
             padding: 5px 0;
             cursor: pointer;
         }
-
         .produtos li:hover {
             background-color: #f1f1f1;
         }
-
         .detalhes-mesa button, .produtos button {
             background-color: #4CAF50;
             color: white;
@@ -83,17 +76,14 @@
             border-radius: 4px;
             cursor: pointer;
         }
-
         .detalhes-mesa button:hover, .produtos button:hover {
             background-color: #45a049;
         }
-
         .lista-produtos {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 10px;
         }
-
         .produto {
             background-color: #fff;
             border: 1px solid #ccc;
@@ -102,19 +92,29 @@
             cursor: pointer;
             transition: transform 0.2s;
         }
-
         .produto:hover {
             transform: scale(1.05);
         }
-
         .nome-produto {
             font-weight: bold;
         }
-
         .preco-produto {
             color: #666;
         }
-
+        .fechar {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #ff5c5c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .fechar:hover {
+            background-color: #ff1c1c;
+        }
         /* Estilos para o modal do recibo */
         .recibo-flutuante {
             display: none;
@@ -128,41 +128,33 @@
             width: 300px;
             z-index: 1000;
         }
-
         .recibo-flutuante.active {
             display: block;
         }
-
         .recibo-flutuante h3 {
             margin-top: 0;
         }
-
         .recibo-flutuante ul {
             list-style-type: none;
             padding: 0;
             margin: 0;
         }
-
         .recibo-flutuante ul li {
             padding: 10px 0;
             border-bottom: 1px solid #ddd;
         }
-
         .recibo-flutuante ul li:last-child {
             border-bottom: none;
         }
-
         .recibo-flutuante strong {
             font-size: 1.2em;
         }
-
         .recibo-flutuante input {
             width: calc(100% - 20px);
             padding: 8px;
             margin-top: 5px;
             box-sizing: border-box;
         }
-
         .recibo-flutuante button {
             background-color: #4CAF50;
             color: white;
@@ -172,33 +164,27 @@
             border-radius: 4px;
             cursor: pointer;
         }
-
         .recibo-flutuante button:hover {
             background-color: #45a049;
         }
-
         .total-line {
             font-weight: bold;
             font-size: 1.1em;
         }
-
         /* Media Queries para Responsividade */
         @media (max-width: 600px) {
             .mesas {
                 flex-direction: column;
                 align-items: center;
             }
-
             .mesa {
                 width: 90%;
             }
-
             .detalhes-mesa, .produtos, .recibo-flutuante {
                 width: 90%;
                 max-width: 100%;
                 padding: 10px;
             }
-
             .recibo-flutuante {
                 bottom: 10px;
                 right: 10px;
@@ -216,6 +202,7 @@
             </div>
         </div>
         <div class="detalhes-mesa" v-if="mesaSelecionada">
+            <button class="fechar" @click="fecharJanelaMesa">X</button>
             <h3>Mesa {{ mesaSelecionada.id }}</h3>
             <ul>
                 <li v-for="(item, index) in mesaSelecionada.itens">
@@ -236,22 +223,35 @@
             </div>
             <button class="botao-fechar" @click="fecharProdutos">Fechar</button>
         </div>
+
         <!-- Janela flutuante do recibo -->
         <div class="recibo-flutuante" v-if="mostrarRecibo" :class="{ active: mostrarRecibo }">
+            <button class="fechar" @click="fecharRecibo">X</button>
             <h3>Recibo da Mesa {{ mesaSelecionada.id }}</h3>
             <ul>
                 <li v-for="item in mesaSelecionada.itens">{{ item.nome }} - R$ {{ item.preco.toFixed(2) }}</li>
                 <li class="total-line">Serviço (10%) - R$ {{ (mesaSelecionada.total * 0.1).toFixed(2) }}</li>
                 <li class="total-line"><strong>Total a Pagar - R$ {{ (mesaSelecionada.total * 1.1).toFixed(2) }}</strong></li>
             </ul>
-            <div v-if="pagamentoDinheiro">
-                <label for="valorRecebido">Valor Recebido:</label>
-                <input type="number" id="valorRecebido" v-model="valorRecebido">
-                <br>
-                <button @click="calcularTroco">Calcular Troco</button>
-                <p v-if="troco >= 0">Troco: R$ {{ troco.toFixed(2) }}</p>
+            <label for="valorRecebido">Valor Recebido:</label>
+            <input type="number" id="valorRecebido" v-model="valorRecebido">
+            <button @click="calcularTroco">Calcular Troco</button>
+            <p v-if="troco > 0">Troco: R$ {{ troco.toFixed(2) }}</p>
+            <button @click="registrarPedido">Registrar</button>
+        </div>
+
+        <!-- Botão para visualizar histórico de pedidos -->
+        <button @click="mostrarHistorico">Histórico de Pedidos</button>
+        <div v-if="exibirHistorico">
+            <h3>Histórico de Pedidos</h3>
+            <div v-for="(comanda, index) in historicoComandas" :key="index">
+                <h4>---------------------------------------------------</h4>
+                <h4>Mesa {{ comanda.mesa }} - Total: R$ {{ comanda.total.toFixed(2) }}</h4>
+                <p>Registrado em: {{ formatarData(comanda.timestamp) }}</p>
+                <ul>
+                    <li v-for="item in comanda.itens">{{ item.nome }} - R$ {{ item.preco.toFixed(2) }}</li>
+                </ul>
             </div>
-            <button @click="fecharRecibo">Fechar</button>
         </div>
     </div>
 
@@ -259,10 +259,25 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <!-- Seu código JavaScript -->
     <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB04dtBHiNoLMabTQy5V_sIDt8_GuBUOlA",
+            authDomain: "comanda-7c572.firebaseapp.com",
+            projectId: "comanda-7c572",
+            storageBucket: "comanda-7c572.appspot.com",
+            messagingSenderId: "390253960196",
+            appId: "1:390253960196:web:df7f9a5288c5bdfeb72951",
+            measurementId: "G-6F4MVPVNML"
+        };
+
+        // Inicializa o Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         new Vue({
             el: '#app',
             data: {
-                mesas: [
+                mesas: JSON.parse(localStorage.getItem('mesas')) || [
                     { id: 1, itens: [], total: 0 },
                     { id: 2, itens: [], total: 0 },
                     { id: 3, itens: [], total: 0 },
@@ -278,7 +293,8 @@
                 pagamentoDinheiro: false,
                 valorRecebido: 0,
                 troco: 0,
-                historicoComandas: [], // Se necessário
+                historicoComandas: [],
+                exibirHistorico: false,
             },
             methods: {
                 selecionarMesa(mesa) {
@@ -290,18 +306,21 @@
                 fecharMesa() {
                     if (this.mesaSelecionada) {
                         this.mostrarRecibo = true;
-                        // Salvar a comanda no histórico (opcional)
-                        this.historicoComandas.push({
+                        const pedido = {
                             mesa: this.mesaSelecionada.id,
-                            itens: this.mesaSelecionada.itens,
-                            total: this.mesaSelecionada.total * 1.1 // Total com 10% de serviço
-                        });
+                            itens: [...this.mesaSelecionada.itens],
+                            total: this.mesaSelecionada.total * 1.1,
+                            timestamp: new Date().toISOString() // Adicionando timestamp atual
+                        };
+                        this.historicoComandas.push(pedido);
+                        this.salvarMesasLocalmente();
                     }
                 },
                 adicionarProduto(produto) {
                     if (this.mesaSelecionada) {
                         this.mesaSelecionada.itens.push({ nome: produto.nome, preco: produto.preco });
-                        this.mesaSelecionada.total += parseFloat(produto.preco);
+                        this.atualizarTotal();
+                        this.salvarMesasLocalmente();
                     }
                 },
                 fecharProdutos() {
@@ -315,6 +334,7 @@
                     this.pagamentoDinheiro = false;
                     this.valorRecebido = 0;
                     this.troco = 0;
+                    this.salvarMesasLocalmente();
                 },
                 calcularTroco() {
                     if (this.valorRecebido >= this.mesaSelecionada.total * 1.1) {
@@ -327,14 +347,56 @@
                     if (this.mesaSelecionada) {
                         this.mesaSelecionada.itens.splice(index, 1);
                         this.atualizarTotal();
+                        this.salvarMesasLocalmente();
                     }
                 },
                 atualizarTotal() {
                     this.mesaSelecionada.total = this.mesaSelecionada.itens.reduce((total, item) => total + item.preco, 0);
+                },
+                fecharJanelaMesa() {
+                    this.mesaSelecionada = null;
+                },
+                registrarPedido() {
+                    if (this.mesaSelecionada) {
+                        const pedido = {
+                            mesa: this.mesaSelecionada.id,
+                            itens: [...this.mesaSelecionada.itens],
+                            total: this.mesaSelecionada.total * 1.1,
+                            timestamp: new Date().toISOString() // Adicionando timestamp atual
+                        };
+                        db.collection('pedidos').add(pedido).then(() => {
+                            alert('Pedido registrado com sucesso!');
+                            this.salvarMesasLocalmente();
+                        }).catch((error) => {
+                            console.error('Erro ao registrar pedido: ', error);
+                        });
+                    }
+                },
+                mostrarHistorico() {
+                    this.exibirHistorico = !this.exibirHistorico;
+                    if (this.exibirHistorico) {
+                        db.collection('pedidos').orderBy('timestamp', 'desc').get().then((querySnapshot) => {
+                            this.historicoComandas = [];
+                            querySnapshot.forEach((doc) => {
+                                this.historicoComandas.push(doc.data());
+                            });
+                        });
+                    }
+                },
+                formatarData(timestamp) {
+                    const date = new Date(timestamp);
+                    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+                },
+                salvarMesasLocalmente() {
+                    localStorage.setItem('mesas', JSON.stringify(this.mesas));
                 }
             },
             created() {
-                // Inicialização e carregamento inicial, se necessário
+                // Carregar dados do localStorage se existirem
+                const localMesas = JSON.parse(localStorage.getItem('mesas'));
+                if (localMesas) {
+                    this.mesas = localMesas;
+                }
             }
         });
     </script>
