@@ -217,10 +217,13 @@
         </div>
         <div class="produtos" v-if="exibirProdutos">
             <h3>Produtos Cadastrados</h3>
-            <div class="lista-produtos">
-                <div class="produto" v-for="produto in produtos" :key="produto.nome" @click="adicionarProduto(produto)">
-                    <div class="nome-produto">{{ produto.nome }}</div>
-                    <div class="preco-produto">R$ {{ produto.preco.toFixed(2) }}</div>
+            <div class="categoria-produtos" v-for="(categoria, index) in categorias" :key="index">
+                <h4>{{ categoria }}</h4>
+                <div class="lista-produtos">
+                    <div class="produto" v-for="produto in produtosFiltrados(categoria)" :key="produto.nome" @click="adicionarProduto(produto)">
+                        <div class="nome-produto">{{ produto.nome }}</div>
+                        <div class="preco-produto">R$ {{ produto.preco.toFixed(2) }}</div>
+                    </div>
                 </div>
             </div>
             <button class="botao-fechar" @click="fecharProdutos">Fechar</button>
@@ -242,7 +245,7 @@
         </div>
 
         <!-- Botão para visualizar histórico de pedidos -->
- 
+        <button @click="mostrarHistorico">Mostrar Histórico</button>
         <div v-if="exibirHistorico">
             <h3>Histórico de Pedidos</h3>
             <div v-for="(comanda, index) in historicoComandas" :key="index">
@@ -283,10 +286,12 @@
                     { id: 2, itens: [], total: 0 },
                     { id: 3, itens: [], total: 0 },
                 ],
+                categorias: ['Comidas', 'Petiscos', 'Bebidas', 'Sobremesas'],
                 produtos: [
-                    { nome: 'Coca Cola', preco: 5.00 },
-                    { nome: 'Batata Frita', preco: 10.00 },
-                    { nome: 'Hambúrguer', preco: 15.00 },
+                    { nome: 'Coca Cola', preco: 5.00, categoria: 'Bebidas' },
+                    { nome: 'Batata Frita', preco: 10.00, categoria: 'Petiscos' },
+                    { nome: 'Hambúrguer', preco: 15.00, categoria: 'Comidas' },
+                    { nome: 'Sorvete', preco: 8.00, categoria: 'Sobremesas' }
                 ],
                 mesaSelecionada: null,
                 exibirProdutos: false,
@@ -294,18 +299,16 @@
                 pagamentoDinheiro: false,
                 valorRecebido: 0,
                 troco: 0,
-                historicoComandas: [],
-                exibirHistorico: true,
+                historicoComandas: JSON.parse(localStorage.getItem('historicoComandas')) || [],
+                exibirHistorico: false,
             },
             methods: {
                 selecionarMesa(mesa) {
                     this.mesaSelecionada = mesa;
                 },
-
                 mostrarProdutos() {
                     this.exibirProdutos = true;
                 },
-
                 fecharMesa() {
                     if (this.mesaSelecionada) {
                         this.mostrarRecibo = true;
@@ -313,13 +316,12 @@
                             mesa: this.mesaSelecionada.id,
                             itens: [...this.mesaSelecionada.itens],
                             total: this.mesaSelecionada.total * 1.1,
-                            timestamp: new Date().toISOString() // Adicionando timestamp atual
+                            timestamp: new Date().toISOString()
                         };
-                        this.historicoComandas.push(pedido);
-                        this.salvarMesasLocalmente();
+                        this.historicoComandas.unshift(pedido); // Adiciona no início do array
+                        this.salvarHistoricoLocalmente();
                     }
                 },
-
                 adicionarProduto(produto) {
                     if (this.mesaSelecionada) {
                         this.mesaSelecionada.itens.push({ nome: produto.nome, preco: produto.preco });
@@ -327,11 +329,9 @@
                         this.salvarMesasLocalmente();
                     }
                 },
-
                 fecharProdutos() {
                     this.exibirProdutos = false;
                 },
-
                 fecharRecibo() {
                     this.mostrarRecibo = false;
                     this.mesaSelecionada.itens = [];
@@ -342,7 +342,6 @@
                     this.troco = 0;
                     this.salvarMesasLocalmente();
                 },
-
                 encerrarMesa() {
                     if (this.mesaSelecionada) {
                         this.mesaSelecionada.itens = [];
@@ -351,11 +350,10 @@
                         this.pagamentoDinheiro = false;
                         this.valorRecebido = 0;
                         this.troco = 0;
-                        this.mostrarRecibo = false; // Fechar automaticamente a janela de recibo
+                        this.mostrarRecibo = false; 
                         this.salvarMesasLocalmente();
                     }
                 },
-
                 calcularTroco() {
                     if (this.valorRecebido >= this.mesaSelecionada.total * 1.1) {
                         this.troco = this.valorRecebido - (this.mesaSelecionada.total * 1.1);
@@ -376,46 +374,29 @@
                 fecharJanelaMesa() {
                     this.mesaSelecionada = null;
                 },
-                
                 mostrarHistorico() {
                     this.exibirHistorico = !this.exibirHistorico;
-                    if (this.exibirHistorico) {
-                        // Verificar se há dados no localStorage
-                        const historicoSalvo = localStorage.getItem('historicoComandas');
-                        if (historicoSalvo) {
-                            // Se houver, usar os dados armazenados
-                            this.historicoComandas = JSON.parse(historicoSalvo);
-                        } else {
-                            // Se não houver, buscar dados do Firestore
-                            db.collection('pedidos').orderBy('desc', 'timestamp').get().then((querySnapshot) => {
-                                this.historicoComandas = [];
-                                querySnapshot.forEach((doc) => {
-                                    this.historicoComandas.push(doc.data());
-                                });
-                                // Armazenar dados no localStorage
-                                localStorage.setItem('historicoComandas', JSON.stringify(this.historicoComandas));
-                            });
-                        }
-                    }
                 },
-
-                // Método para limpar o histórico (se necessário)
                 limparHistorico() {
                     localStorage.removeItem('historicoComandas');
                     this.historicoComandas = [];
                     this.exibirHistorico = false;
                 },
-                                
                 formatarData(timestamp) {
                     const date = new Date(timestamp);
                     return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
                 },
                 salvarMesasLocalmente() {
                     localStorage.setItem('mesas', JSON.stringify(this.mesas));
+                },
+                salvarHistoricoLocalmente() {
+                    localStorage.setItem('historicoComandas', JSON.stringify(this.historicoComandas));
+                },
+                produtosFiltrados(categoria) {
+                    return this.produtos.filter(produto => produto.categoria === categoria);
                 }
             },
             created() {
-                // Carregar dados do localStorage se existirem
                 const localMesas = JSON.parse(localStorage.getItem('mesas'));
                 if (localMesas) {
                     this.mesas = localMesas;
@@ -424,4 +405,5 @@
         });
     </script>
 </body>
+
 </html>
